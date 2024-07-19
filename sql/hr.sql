@@ -641,3 +641,89 @@ from employees e join departments d
 on e.department_id= d.department_id
 join locations l on d.location_id = l.location_id 
 and (salary>(select avg(salary)from employees));
+
+--Q8.10번 부서 사람들 중에 20번 주서의 사원과 같은 업무를 하는 사원의 
+--사원번호, 업무, 이름, 부서명,입사일, 지역명을 출력
+select e.employee_id, e.job_id, e.first_name||' '||e.last_name, d.department_name, e.hire_date, l.city
+from employees e join departments d on e.department_id = d.department_id
+join locations l on d.location_id = l.location_id
+and e.department_id = 10
+and job_id in (select job_id from employees where department_id = 20);
+
+--Q9.10번 부서 중에서 30번 부서에는 없는 업무를 하는 사원의 
+--사원번호, 업무, 이름, 부서명, 입사일, 지역을 출력
+select e.employee_id, e.job_id, e.first_name||' '||e.last_name, d.department_name, e.hire_date, l.city
+from employees e join departments d on e.department_id = d.department_id
+join locations l on d.location_id = l.location_id
+and e.department_id = 10
+and job_id not in (select job_id from employees where department_id = 30);
+
+--Q10.10번 부서와 같은 일을 하는 사원의 사원의 
+--사원번호, 업무, 이름, 부서번호, 부서명, 지역, 급여를 출력
+select e.employee_id , e.job_id, e.first_name||' '||e.last_name, e.department_id,
+d.department_name, l.city,e.salary 
+from employees e join departments d on e.department_id = d.department_id
+join locations l on d. location_id = l.location_id
+and job_id in (select job_id from employees where department_id = 10);
+
+--Q11.'Neena' 혹은 'David'의 급여와 같은 사원의 사원번호, 이름, 급여를 출력하라
+select employee_id , first_name||' '||last_name, salary
+from employees
+where salary in (select salary from employees 
+where first_name = 'Neena' or first_name = 'David');
+
+--Q12. 급여가 30번 부서의 최고 급여보다 높은 사원의 사원번호, 이름, 급여를 출력하라.
+select employee_id, first_name||' '||last_name, salary
+from employees
+where salary > (select max(salary) from employees where department_id = 30);
+
+
+select employee_id, first_name||' '||last_name, salary
+from employees
+where salary > all(select salary from employees where department_id = 30);
+
+--Q13.급여가 30번 부서의 최저 급여보다 낮은 사원의 사원번호, 이름, 급여를 출력하라.
+select employee_id, first_name||' '||last_name, salary
+from employees
+where salary < (select min(salary) from employees where department_id = 30);
+
+select employee_id, first_name||' '||last_name, salary
+from employees
+where salary < all(select salary from employees where department_id = 30);
+
+--Q14.급여가 90번 부서의 최저 급여보다 높은 사원의 사원번호, 이름, 급여 출력
+select employee_id,first_name||' '||last_name, salary
+from employees
+where salary > (select min(salary) from employees where department_id =90);
+
+select employee_id,first_name||' '||last_name, salary
+from employees
+where salary > any(select salary from employees where department_id =90);
+
+--Q15.급여가 90번 부서의 최고 급여보다 낮은 사원의 사원번호, 이름, 급여를 출력하라.
+select employee_id,first_name||' '||last_name, salary
+from employees
+where salary < (select max(salary) from employees where department_id =90);
+
+select employee_id,first_name||' '||last_name, salary
+from employees
+where salary < any(select salary from employees where department_id =90);
+
+--Q16.사원 이름과 부서명을 출력하라.(단, 뷰나 조인을 사용하지 말고 서브쿼리를 쓸 것)
+select e.first_name||' '||e.last_name 사원이름,
+(select d.department_name from departments d where e.department_id = d.department_id) 부서명
+from employees e;
+
+--------------------------------------------------------------------------------
+select * from employees;
+create table emp as select * from employees;        --테이블 복사 (데이터 포함)
+
+select * from departments;
+create table dpt as select * from departments where 1=2;        --데이터 없이 구조만 가져옴
+
+select * from jobs;
+create table js as select * from jobs;
+
+select * from locations;
+create table loc as select * from locations;
+
