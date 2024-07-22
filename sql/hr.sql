@@ -727,3 +727,72 @@ create table js as select * from jobs;
 select * from locations;
 create table loc as select * from locations;
 
+--------------------------------------------------------------------------------
+CREATE TABLE TEST_TCL AS SELECT * FROM DEPARTMENTS;
+SELECT * FROM TEST_TCL;
+COMMIT; --트랜잭션시작        --(DDL은 발생하면 자동 커밋)
+UPDATE TEST_TCL SET DEPARTMENT_ID=50;
+savepoint aaa;
+
+UPDATE TEST_TCL SET LOCATION_ID=1004 WHERE DEPARTMENT_NAME='IT';
+savepoint bbb;
+
+DELETE FROM TEST_TCL WHERE DEPARTMENT_NAME='Marketing';
+rollback to bbb;
+
+SELECT * FROM TEST_TCL;
+ROLLBACK;
+SELECT * FROM TEST_TCL;
+--------------------------------------------------------------------------------
+create table dept as select * from departments where 1=2;
+CREATE TABLE EMP_TAB(
+EMPNO NUMBER(4),
+ENAME VARCHAR2(10),
+JOB_ID VARCHAR2(9),
+MGR NUMBER(4) CONSTRAINT EMP_SELF_KEY
+REFERENCES EMP_TAB(EMPNO),
+HIRE_DATE DATE,
+SAL NUMBER(7),
+COMM NUMBER(1),
+DEPTNO NUMBER(2) NOT NULL,
+CONSTRAINT EMP_DEPTNO_FK FOREIGN KEY(DEPTNO)
+REFERENCES DEPT(DEPTNO),
+CONSTRAINT EMP_EMPNO_PK PRIMARY KEY(EMPNO)
+);
+
+select constraint_name from user_constraints;
+
+alter table test_TAB add constraint test_tab_pk primary key(emno);
+alter table test_tab drop constraint test_tab_pk;
+
+
+--------------------------------------------------------------------------------
+--view
+select * from emp_details_view;
+
+--or replace: view는 계속 재정의를 하기 때문에 붙이는 것이 좋음
+create or replace noforce view test_view_emp 
+as select employee_id, first_name,salary 
+from employees with read only;
+
+select * from test_view_emp;
+select * from tab;
+
+drop view test_view_emp;
+
+--join으로 view 생성
+CREATE OR REPLACE VIEW TEST_JOIN_VIEW
+AS SELECT 
+    e.first_name, d.department_name 
+
+FROM 
+   employees e join departments d
+    on d.department_id=e.department_id;
+
+select * from test_join_view;
+
+--------------------------------------------------------------------------------
+--rownum, rowid
+--10개행씩 잘라서 검색되도록 dql을 작성
+select * from employees 
+where rownum >=11 and rownum <=20;

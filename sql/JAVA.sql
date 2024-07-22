@@ -72,6 +72,7 @@ CREATE TABLE SAMPLE1
 create sequence sample1_seq;
 drop sequence "JAVA"."SAMPLE1_SEQ";
 
+
 select * from hr.employees;     --권한이 없어서 접근 불가
 
 create table sample2(num number);
@@ -358,8 +359,320 @@ where num<3;
 
 delete from major where num>3 and num<6;
 
+--------------------------------------------------------------------------------
+
+select dbms_random.string('A',19) from dual;
+select dbms_random.value() from dual;
+select dbms_random.value()*10 from dual;
+select floor(dbms_random.value()*10)from daul;
+select floor(dbms_random.value()*45)+1 from dual;
 
 
+--begin 
+--    for i in 1..50 loop
+--    insert into
+--    sample1( num,fname,lname,tel,addr )
+--    values( sample1_seq.nextval,dbms_random.string('A',19),
+--    dbms_random.string('Q',19),'010-0000-0000','seoul' );
+--    end loop;
+--    commit;
+--end;        --블럭을 정확하게 드래그해서 실행해야 함
+
+select count(*) from sample1;
+
+insert into
+sample1( num,
+fname,
+lname,
+tel,
+addr )
+values( sample1_seq.nextval,
+dbms_random.string('A',19),         --문자 랜덤
+dbms_random.string('Q',19),
+'010-0000-0000',
+'seoul' );
+
+--시퀀스는 별도로 존재하기 때문에 테이블의 기존데이터가 사라져도 이어서 생성된다.
+--테이블의 (1,2,3,4)가 삭제되고 새로 insert하면 5부터 시작
+--다시 1번부터 시작하고 싶다면 시퀀스를 삭제한 후 재생성
+
+
+exec PROCEDURE1;
+
+update sample1 set fname='yangssem' where num=1;
+update sample1 set fname = 'yangssem2'where fname ='yangssem';
+update sample1 set fname = 'yangssem3', lname = 'oracle',
+tel='010-0000-9494', addr='busan',regdate='24/12/25'
+where fname = 'yangssem2';
+update sample1 set num = 500001 where fname='yangssem3';
+
+--------------------------------------------------------------------------------
+--merge: 테이블 데이터 병합 
+--두 테이블의 데이터에 중복이 있으면 update, 중복이 없으면 insert >> num을 기준으로
+
+create table TEST1 (pnum number,p2num number,pcount number,price number);
+insert into test1 values(1001,2001,100,5000);
+insert into test1 values(1002,2002,100,3000);
+insert into test1 values(1003,2003,100,2000);
+insert into test1 values(1004,2003,100,2000);
+
+create table TEST2 (pnum number,p2num number,pcount number,price number);
+insert into test2 values(6001,7001,300,7000);
+insert into test2 values(6002,7002,300,8000);
+insert into test2 values(6003,7003,300,9000);
+create table TEST_merge (pnum number,p2num number,pcount number,price number);
+
+--test_merge + test1
+merge into test_merge tm using test1 t1
+on (tm.pnum=t1.pnum)
+when matched then 
+update set tm.p2num=t1.p2num
+when not matched then 
+insert values(t1.pnum,t1.p2num,t1.pcount,t1.price);
+
+--test_merge+test2
+MERGE INTO test_merge tm USING test2 t2
+ON (tm.pnum=t2.pnum)
+WHEN MATCHED THEN
+UPDATE SET tm.p2num=t2.p2num
+WHEN NOT MATCHED THEN
+INSERT VALUES(t2.pnum, t2.p2num, t2.pcount, t2.price);
+
+delete from test2;
+drop table test1;
+select * from test2;
+--DML 후에 커밋하지 않고 DDL을 실행하면 앞의 DML은 자동 커밋
+
+--------------------------------------------------------------------------------
+--실습
+CREATE TABLE TEST_BOARD 
+(
+  WNUM NUMBER NOT NULL 
+, WRITER VARCHAR2(20) NOT NULL 
+, TITLE VARCHAR2(20) NOT NULL 
+, CON VARCHAR2(20) NOT NULL 
+, WDATE DATE DEFAULT sysdate NOT NULL 
+, VCOUNT NUMBER DEFAULT 0 
+, CONSTRAINT TEST_BOARD_PK PRIMARY KEY 
+  (
+    WNUM 
+  )
+  ENABLE 
+);
+
+create sequence seq_test_board;
+drop sequence seq_test_board;
+
+--begin
+--    for i in 1..10 loop
+--    insert into test_board(wnum,writer,title,con,wdate,vcount)
+--    values(seq_test_board.nextval,'kim','oracle','aaa',
+--    '2024/07/22',1);
+--    end loop;
+--    commit;
+--end;
+
+delete from test_board where wnum = 4;
+insert into test_board(wnum,writer,title,con,wdate,vcount)
+    values(seq_test_board.nextval,'yangssem','oracle','aaa',
+    '2024/07/22',1);
+
+update test_board set con='즐거운 oracle'  where writer='yangssem';
+
+select * from test_board where title like '%oracle%' or con like'%oracle%';
+
+alter table test_board add (comm_ch varchar2(20));
+truncate table test_board;
+drop table test_board;
+
+--------------------------------------------------------------------------------
+CREATE TABLE test_dept(
+deptno NUMBER PRIMARY KEY,
+dname VARCHAR2(20) DEFAULT '개발부',
+loc CHAR(1) CHECK(loc IN('1', '2')));
+
+CREATE TABLE test_emp(
+no NUMBER(4) PRIMARY KEY,
+name VARCHAR2(20) NOT NULL,
+loc VARCHAR2(4) CHECK(loc IN('서울', '부산')),
+jumin CHAR(13) UNIQUE,
+deptno NUMBER REFERENCES test_dept(deptno) );
+
+--------------------------------------------------------------------------------
+CREATE TABLE TEST_BOARD_COMM(
+COMM_ID NUMBER,
+WRITER VARCHAR2(20) CONSTRAINT test_b_com_writer_nn NOT NULL,
+TITLE VARCHAR2(400) CONSTRAINT test_b_com_title_nn NOT NULL,
+CON VARCHAR2(2000) CONSTRAINT test_b_com_con_nn NOT NULL,
+WDATE DATE default SYSDATE CONSTRAINT test_b_com_wdate_nn NOT NULL,
+wnum NUMBER,
+VCOUNT NUMBER,
+CONSTRAINT test_b_com_id_wnum_pk PRIMARY KEY (COMM_ID) ,
+CONSTRAINT test_b_com_wnum_fk FOREIGN KEY (wnum)
+REFERENCES TEST_BOARD(wnum)
+);
+select constraint_name from user_constraints;
+--------------------------------------------------------------------------------
+select rowid,rownum,num,title,content,writer, wdate from board;
+
+
+drop table test_tab;
+create table test_tab(
+num NUMBER(4) ,
+fname VARCHAR2(10),
+loc VARCHAR2(10),
+jumin CHAR(13),
+deptno NUMBER
+);
+drop sequence test_tab_seq;
+create sequence test_tab_seq;
+
+insert into test_tab
+values(test_tab_seq.nextval,'yangssem','서울','1234561234567',100);
+
+CREATE INDEX TEST_TAB_IDX ON TEST_TAB (FNAME);  --pk로 지정되었으면 인덱스 자동 생성
+select index_name from user_indexes;
+drop index test_tab_idx;
+
+--begin
+--for i in 1..1000 loop
+--insert into test_tab
+--values(test_tab_seq.nextval,
+--SYS.dbms_random.string('A',9),
+--'서울',
+--'1234561234567',
+--100);
+--end loop;
+--commit;
+--End;
+
+select num,fname from test_tab where fname>'0';
+
+
+--------------------------------------------------------------------------------
+drop view test_view;
+create or replace view test_view(wnum,writer,title) as
+select wnum,writer,title from test_board
+where wnum in(20,30) with check option;
+
+select * from test_view;
+
+insert into test_view(wnum,writer,title) values(10,'admin','yyy'); --TEST_BOARD에 입력안됨
+insert into test_view(wnum,writer,title) values(20,'admin','yyy');
+insert into test_view(wnum,writer,title) values(30,'admin','yyy');
+--------------------------------------------------------------------------------
+drop TABLE test4_dept CASCADE CONSTRAINTS PURGE;
+
+CREATE TABLE test4_dept(
+deptno NUMBER(2),
+dname VARCHAR2(15) default '개발부',
+loc_id CHAR(1),
+CONSTRAINT test4_dept_deptno_pk PRIMARY KEY (deptno),
+CONSTRAINT test4_dept_loc_ck CHECK(loc_id IN('1', '2'))
+);
+
+drop TABLE test4_emp CASCADE CONSTRAINTS PURGE;
+CREATE TABLE test4_emp(
+empno NUMBER(4),
+ename VARCHAR2(10) CONSTRAINT test4_emp_ename_nn NOT NULL,
+loc_name VARCHAR2(6),
+jumin CHAR(13),
+deptno NUMBER(2),
+sal NUMBER,
+CONSTRAINT test4_emp_no_pk PRIMARY KEY (empno),
+CONSTRAINT test4_emp_jumin_uq UNIQUE ( jumin),
+CONSTRAINT test4_emp_deptno_fk FOREIGN KEY (deptno) REFERENCES test4_dept(deptno)
+);
+
+INSERT INTO test4_dept VALUES(10, '영업부', '1');
+INSERT INTO test4_dept VALUES(20, '기획부', '1');
+INSERT INTO test4_dept VALUES(30, '홍보부', '2');
+INSERT INTO test4_dept VALUES(40, '관리부', '2');
+INSERT INTO test4_emp VALUES(1001, '홍길동', '서울', '1234561234567', 10,3000);
+INSERT INTO test4_emp VALUES(1002, '최길동', '서울', '1234561234568', 10,4000);
+INSERT INTO test4_emp VALUES(1003, '박길동', '경기', '1234561234569', 20,5000);
+INSERT INTO test4_emp VALUES(1004, '양길동', '경기', '1234561234571', 30,6000);
+INSERT INTO test4_emp VALUES(1005, '한길동', '서울', '1234561234572', 40,7000);
+INSERT INTO test4_emp VALUES(1006, '강길동', '서울', '1234561234573', 40,8000);
+Commit;
+
+--1-1.부서 ID가 10번인 사원데이터를 갖는 이름이 test4_emp_view인 뷰를 생성시
+--empno,ename 두개 컬럼만으로 생성 후, 뷰 검색, 뷰구조 확인하라.
+select empno, ename from test4_emp where deptno = 10;
+
+CREATE VIEW TEST4_EMP_VIEW
+AS SELECT 
+    empno, ename
+FROM 
+    test4_emp
+    where deptno=10;
+
+select * from test4_emp_view;
+
+drop view test4_emp_view;
+
+--1-2.부서ID가 20번인 부서데이터를 갖는 이름이 test4_dept_view 인 뷰를 생성시
+--deptno, dname 두개 컬럼만으로 생성 후, 뷰검색, 뷰구조 확인하라.
+select deptno, dname from test4_dept where deptno = 20;
+
+CREATE VIEW TEST4_DEPT_VIEW
+AS SELECT 
+    deptno, dname
+FROM 
+    test4_dept where deptno = 20;
+
+select * from test4_dept_view;
+drop view test4_dept_view;
+--2-1.부서ID가 10번인 사원데이터를 갖는 이름이 test4_emp_view 인
+--뷰를 생성시, 컬럼 이름을 empno를 employee_id,
+--ename을 employee_name으로 별칭 설정하라.
+
+CREATE OR REPLACE VIEW TEST4_EMP_VIEW
+AS SELECT 
+    empno employee_id, ename employee_name
+FROM 
+    test4_emp
+    where deptno=10;
+
+--2-2.부서ID가 20번인 부서데이터를 갖는 이름이 test4_dept_view 인
+--뷰를 생성시, 컬럼 이름을 deptno 를 department_id,
+--dname 을 department_name 으로 별칭설정하라.
+
+CREATE OR REPLACE VIEW TEST4_DEPT_VIEW
+AS SELECT 
+    deptno department_id, dname department_name
+FROM 
+    test4_dept where deptno = 20;
+
+--3.test4_emp 테이블과 test4_dept 테이블을 조인하여
+--empno를 사원번호로,
+--ename을 사원명으로,
+--dname을 부서명으로,
+--loc_name 을 지역명으로
+--바꾸는 test4_emp_join_dept_view 를 생성하시오.
+
+create or replace view test4_emp_join_dept_view
+as select e.empno 사원번호, e.ename 사원명, d.dname 부서명,e.loc_name 지역명
+from test4_emp e join test4_dept d
+on d.deptno=e.deptno;
+
+select * from test4_emp_join_dept_view;
+
+
+--4.test4_emp 테이블과 test4_dept 테이블을 조인하여
+--dname를 부서명 으로,
+--min(e.sal)을 최저급여 으로,
+--max(e.sal)을 최고급여 으로,
+--avg(e.sal) 을 평균급여 으로
+--바꾸고 부서이름별로 test4_emp_join_dept_view를 생성하시오.
+
+create or replace view test4_emp_join_dept_view
+as select d.dname 부서명, min(e.sal) 최저급여,max(e.sal) 최고급여, avg(e.sal) 평균급여
+from test4_emp e join test4_dept d
+on e.deptno = d.deptno
+group by dname;
+
+select * from test4_emp_join_dept_view;
 
 
 
