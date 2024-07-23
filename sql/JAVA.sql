@@ -176,7 +176,7 @@ select * from member;
 select count(*) cnt from member;
 
 insert into member(num,id,pw,name,tel)
-values(seq_member.nextval,'admin','hi1234','kim','010');
+values(seq_member.nextval,'admin','hi1111','kim','010');
 
 update member set id='guest',pw='hi2345',name='lee',tel='012'
 where num=5;
@@ -675,4 +675,18 @@ group by dname;
 select * from test4_emp_join_dept_view;
 
 
+--------------------------------------
+exec pc_member_insert;
+select * from member order by num desc;
+truncate table member;
+create sequence seq_member;
 
+exec pc_product_insert;
+select * from product;
+truncate table product;
+create sequence seq_product;
+
+exec pc_board_insert;
+select * from board;
+truncate table board;
+create sequence seq_board;

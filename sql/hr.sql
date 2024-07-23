@@ -794,5 +794,74 @@ select * from test_join_view;
 --------------------------------------------------------------------------------
 --rownum, rowid
 --10개행씩 잘라서 검색되도록 dql을 작성
-select * from employees 
-where rownum >=11 and rownum <=20;
+select * from 
+(select rownum rnum, employee_id, first_name,salary from employees order by employee_id asc)
+where rnum >= 1 and rnum <=10;
+
+select * from 
+(select rownum rnum, employee_id, first_name,salary from employees order by employee_id asc)
+where rnum >= 11 and rnum <=20;
+--실행순서: from > where > select
+
+select * from 
+(select rownum rnum, employee_id, first_name,salary from employees order by employee_id asc)
+where rnum between 21 and 30 ;
+
+--------------------------------------------------------------------------------
+--소계: rollup(바로바로 보여줌), cube(마지막에 모아서 한번 더 보여줌)
+select department_id, job_id, sum(salary) from employees
+where department_id <=40 
+group by rollup(department_id , job_id)
+order by department_id;
+
+select department_id, job_id, sum(salary) from employees
+where department_id <=40 
+group by cube(department_id , job_id)
+order by department_id;
+
+--------------------------------------------------------------------------------
+--서브쿼리 응용: with
+with e as
+(select employee_id, manager_id,salary,last_name from employees where department_id = 50),
+d as
+(select avg(salary) avg_salary from employees where department_id = 50)
+select e.employee_id, e.last_name,e.salary
+from e,d
+where e.salary < d.avg_salary;
+
+--부서별 평균 급여액보다 부서별 급여 합계액이 큰 부서의 명단을 추출
+--1.부서별 급여 합계
+select department_name, sum(salary) sum_sal
+from employees e, departments d
+where e.department_id = d.department_id 
+group by department_name;
+
+--2.부서별 전체 평균 = 전사원 급여 총계 나누기 부서 수
+select dt.sum_amt/dc.cnt 부서평균
+from (select sum(e.salary) sum_amt from employees e, departments d
+where e.department_id = d.department_id) dt,
+(select count(*) cnt from departments d
+where d.department_id in(select department_id from employees)) dc;
+
+--3-1.최종 일반 서브 쿼리
+select a.department_name, a.sum_sal
+from (select department_name, sum(salary) sum_sal
+from employees e, departments d
+where e.department_id = d.department_id 
+group by department_name) a,
+(select dt.sum_amt/dc.cnt avg_amt
+from (select sum(e.salary) sum_amt from employees e, departments d
+where e.department_id = d.department_id) dt,
+(select count(*) cnt from departments d
+where d.department_id in(select department_id from employees)) dc) b
+where a.sum_sal >b.avg_amt;
+
+--3-2. 최종 with 서브쿼리
+with dept_costs as(select department_name, sum(salary) sum_sal
+from employees e, departments d
+where e.department_id = d.department_id 
+group by department_name),
+avg_cost as(select sum(sum_sal)/count(*) avg from dept_costs)
+select dept_costs.*
+from dept_costs, avg_cost
+where dept_costs.sum_sal > avg_cost.avg;
