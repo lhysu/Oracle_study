@@ -865,3 +865,4 @@ avg_cost as(select sum(sum_sal)/count(*) avg from dept_costs)
 select dept_costs.*
 from dept_costs, avg_cost
 where dept_costs.sum_sal > avg_cost.avg;
+
